@@ -53,7 +53,7 @@ const Home = () => {
           <div className="flex flex-row space-x-1 mr-auto w-full h-full">
             <GiDna1 className="text-green-300 text-6xl pr-4 border-r-2 border-white" />
             <div className="flex flex-col space-y-1">
-              <h1 className="font-bold text-4xl">Live Script</h1>
+              <h1 className="font-bold text-4xl bg-gradient-to-r from-white to-green-500 bg-clip-text text-transparent">Live Script</h1>
               <span className="text-green-300 px-2">
                 RealTime Collaboration
               </span>

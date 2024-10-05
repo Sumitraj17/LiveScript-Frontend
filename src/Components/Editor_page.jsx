@@ -1,70 +1,141 @@
-import React, { useEffect, useRef, useContext, useState } from "react";
-import { useLocation } from "react-router-dom";
+import React, { useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import Editor from "@monaco-editor/react";
 import { boilerplateCode } from "./constants";
-import Selector from "./LanguageSelector";
-import { VscTriangleRight } from "react-icons/vsc";
-import { executeCode } from "./APIhelper/api.jsx";
-import { Context } from "./context/context.jsx";
+import Selector from "./component/LanguageSelector.jsx";
+import toast from "react-hot-toast";
+import Actions from "./Custom/Actions.js";
+import initSocket from "../socket.jsx";
+import { Navigate } from "react-router-dom";
+import SideBar from "./component/sidebar.jsx";
+import Tester from "./component/tester.jsx";
 
 const Editor_page = () => {
   const location = useLocation();
+  const reactNavigate = useNavigate();
   const editorRef = useRef(null);
+  const socketRef = useRef(null);
+  const clientsRef = useRef([]); // Ref to hold latest Clients state
+  const [update, setUpdate] = useState(false);
   const [lang, setLang] = useState("javascript");
-  const [code, setCode] = useState("");
-  const [run, setRun] = useState(false);
-  const { language } = useContext(Context);
-  const [testCode, setTestCode] = useState(null);
-
+  const [code, setCode] = useState(""); // Initialize with an empty string
+  const codeRef = useRef(code); // Ref to store the latest code
   const { id, username } = location.state || {};
-
-  const fetchVersion = (lang) => {
-    const match = language.find((element) => element.language === lang);
-    return match ? match.version : null;
-  };
+  const [Clients, setClient] = useState([]);
+  const [socketId, setId] = useState(null);
 
   const onMount = (editor) => {
     editorRef.current = editor;
     editor.focus();
   };
 
-  const handleRun = async () => {
-    setRun(true);
-    try {
-      const version = fetchVersion(lang);
-      // console.log(version);
-      const resp = await executeCode(lang, code, version);
-      setTestCode(resp.run.output);
-      console.log(resp);
-    } catch (error) {
-      console.log("error", error);
-    } finally {
-      setRun(false);
-    }
-  };
   const handleEditorChange = (value) => {
-    setCode(value);
-    // console.log(value);
-    localStorage.setItem("code", value);
+    if(value){
+      setCode(value);
+      codeRef.current = value; // Keep the ref updated with the latest code
+      socketRef.current.emit(Actions.CODE_CHANGE, {
+        id,
+        code: value,
+      });
+    }
+     
+   
+  };
+
+  const handleError = (err) => {
+    toast("Socket Connection Failed.. Try again later");
+    reactNavigate("/");
   };
 
   useEffect(() => {
-    setLang(localStorage.getItem("lang"));
-    setCode(localStorage.getItem("code"));
-    // console.log(code);
-  }, []);
+    const init = async () => {
+      socketRef.current = await initSocket();
 
-  const handleLanguageChange = (lang) => {
-    setCode(boilerplateCode[lang]);
-    setLang(lang); // Update context with the selected language
-    localStorage.setItem("lang", lang);
+      socketRef.current.on("connect_error", handleError);
+      socketRef.current.on("connect_failed", handleError);
+
+      // Listen for CODE_CHANGE event
+      socketRef.current.on(Actions.CODE_CHANGE, ({ code,lang }) => {
+        if (code && code !== codeRef.current) {
+          setCode(code);
+          setLang(lang)
+          codeRef.current = code; // Update the ref
+          if (editorRef.current) {
+            editorRef.current.setValue(code);
+          }
+        }
+      });
+
+      // Join the room
+      socketRef.current.emit(Actions.JOIN, { id, username });
+
+      socketRef.current.on(
+        Actions.JOINED,
+        ({ clients, socketId, userName }) => {
+          if (username !== userName) {
+            toast.success(`${userName} joined the room`);
+          }
+          setId(socketId);
+          setClient(clients);
+
+          // Sync the latest code to the newly joined client
+          socketRef.current.emit(Actions.SYNC_CODE, {
+            code: codeRef.current || "", // Fallback to an empty string if undefined
+            lang:lang,
+            socketId: socketId,
+          });
+        }
+      );
+
+      // Handle when a user clicks run
+      socketRef.current.on("click_run", () => {
+        console.log('Run button triggered across all clients');
+        // Trigger the run functionality across all users
+      });
+
+      socketRef.current.on("disconnected", ({ socketID, userName }) => {
+        toast.success(`${userName} left the room`);
+        setClient((prevClients) =>
+          prevClients.filter((client) => client.socketId !== socketID)
+        );
+      });
+    };
+
+    init();
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+    };
+  }, [id, username]);
+
+  const handleLanguageChange = (language) => {
+    const newCode = boilerplateCode[language];
+    setCode(newCode);
+    codeRef.current = newCode; // Update codeRef with the new code
+    if(language == lang)
+      setUpdate(!update);
+    setLang(language);
+    console.log("Handle Change code");
+    
+    // socketRef.current.emit("recent_code",{id,socketId});
   };
+
+  useEffect(() => {
+    if (socketRef.current) {
+      socketRef.current.emit("recent_code", { id, socketId });
+    }
+  }, [update]);
+
+  if (!username) return <Navigate to="/" />;
 
   return (
     <>
       <div className="grid grid-cols-[15%_55%_30%]">
-        <div className="h-screen bg-gray-800"></div>
-        <div className="h-screen">
+        <SideBar id={id} Clients={Clients} />
+
+        <div className="h-full">
           <div className="px-4 py-2">
             <span className="text-white text-lg rounded-lg p-3 m-3">
               Languages:
@@ -72,36 +143,22 @@ const Editor_page = () => {
             <Selector update={handleLanguageChange} />
           </div>
           <Editor
-            height="calc(100vh - 56px)" // Adjust height to fit below selector
+            height="calc(100vh - 56px)"
             theme="vs-dark"
-            language={lang} // Use state for current language
-            defaultValue={boilerplateCode[lang]}
-            value={code}
+            language={lang}
+            value={code} // Bind editor value to state
             onMount={onMount}
             onChange={handleEditorChange}
+            options={{ tabSize: 2 }}
           />
         </div>
-        <div className="h-screen bg-gray-800 flex flex-col ">
-          <div className="flex flex-row items-center space-x-4 px-3 mt-3">
-            <span className="py-2 px-4 text-white text-lg">Output:</span>
-            <div
-              className={`text-white px-5 py-2 rounded-lg w-1/3 flex items-center justify-between ${
-                run ? "bg-gray-700" : "bg-green-500 hover:bg-green-600"
-              } ${run ? "cursor-not-allowed" : ""}`}
-            >
-              <span
-                onClick={!run ? handleRun : null} // Disable click if run is true
-                className="text-white"
-              >
-                RunCode
-              </span>
-              <VscTriangleRight className="text-lg" />
-            </div>
-          </div>
-          <div className="border border-black-2 m-1 bg-black text-white/60 p-3 h-full">
-            {testCode?testCode:'test'}
-          </div>
-        </div>
+        <Tester
+          lang={lang}
+          code={code}
+          socketRef={socketRef}
+          socketId={socketId}
+          id={id}
+        />
       </div>
     </>
   );

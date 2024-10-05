@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from "react";
-import { getLanguages } from "./APIhelper/api";
-import { Context } from "./context/context.jsx";
+import { getLanguages } from "../APIhelper/api.jsx";
+import { Context } from "../context/context.jsx";
 
 const Selector = ({ update }) => {
   const [Lang, setLanguage] = useState([]); // Initial state for languages

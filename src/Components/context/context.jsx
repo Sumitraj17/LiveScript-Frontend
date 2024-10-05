@@ -16,7 +16,6 @@ const MyContext = ({ children }) => {
     const updateDetails = (lang) => {
         setLanguage(lang);
         localStorage.setItem('lang', lang); // Set the language in localStorage
-        console.log("From context ",lang);
     };
 
     return (
