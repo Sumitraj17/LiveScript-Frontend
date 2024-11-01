@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { GiDna1 } from "react-icons/gi";
 import { v4 as uuidv4 } from "uuid";
 import toast from "react-hot-toast";
-import {useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const Home = () => {
   const [form, setForm] = useState({
@@ -10,6 +11,7 @@ const Home = () => {
     username: "",
   });
   const navigate = useNavigate();
+
   const createNewRoom = (event) => {
     event.preventDefault();
     const rid = uuidv4();
@@ -30,14 +32,14 @@ const Home = () => {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    if(!form.id && !form.username){
-        toast.error("Invalid Username or ROOM ID")
-        return ;
+    if (!form.id && !form.username) {
+      toast.error("Invalid Username or ROOM ID");
+      return;
     }
     const formData = new FormData();
     formData.append("id", form.id);
     formData.append("username", form.username);
-    toast.success("Joined Room")
+    toast.success("Joined Room");
     navigate(`/editor/${form.id}`, {
       state: {
         id: form.id,
@@ -46,14 +48,39 @@ const Home = () => {
     });
   };
 
+  const handleLogout = async() => {
+    // Clear any necessary state or session data
+    try {
+      const resp = await axios.post("http://localhost:5000/user/logout",{},{
+        withCredentials:true
+      });
+      toast.success("Logged out successfully");
+      navigate("/login");
+    } catch (error) {
+      toast.error("Error Occured")
+    } 
+  };
+
   return (
     <>
-      <div className="h-screen w-full text-white flex justify-center items-center">
-        <div className="bg-gray-800 w-1/3 flex flex-col space-y-6 p-5 rounded-lg shadow-xl  ">
+      {" "}
+      <div className="h-screen w-full text-white flex justify-center items-center relative">
+        {/* Logout Button */}{" "}
+        <button
+          className="absolute top-5 right-5 bg-green-300 text-black font-bold py-2 px-4 rounded-xl hover:bg-green-400"
+          onClick={handleLogout}
+        >
+          Logout
+        </button>
+        <div className="bg-gray-800 w-1/3 flex flex-col space-y-6 p-5 rounded-lg shadow-xl">
+          {" "}
           <div className="flex flex-row space-x-1 mr-auto w-full h-full">
+            {" "}
             <GiDna1 className="text-green-300 text-6xl pr-4 border-r-2 border-white" />
             <div className="flex flex-col space-y-1">
-              <h1 className="font-bold text-4xl bg-gradient-to-r from-white to-green-500 bg-clip-text text-transparent">Live Script</h1>
+              <h1 className="font-bold text-4xl bg-gradient-to-r from-white to-green-500 bg-clip-text text-transparent">
+                Live Script
+              </h1>
               <span className="text-green-300 px-2">
                 RealTime Collaboration
               </span>
@@ -61,35 +88,39 @@ const Home = () => {
           </div>
           <form className="flex flex-col space-y-4" onSubmit={handleSubmit}>
             <h1 className="mr-auto">Paste Invitation ROOM ID</h1>
+
             <input
               type="text"
-              className="p-3 rounded-xl w-full text-black "
+              className="p-3 rounded-xl w-full text-black"
               placeholder="ROOM ID"
               name="id"
               value={form.id}
               onChange={onChange}
             />
+
             <input
               type="text"
-              className="p-3 rounded-xl w-full text-black "
+              className="p-3 rounded-xl w-full text-black"
               placeholder="USERNAME"
               name="username"
               value={form.username}
               onChange={onChange}
             />
+
             <button
               className="py-3 px-8 rounded-xl ml-auto bg-green-300 text-black font-bold"
               type="submit"
             >
               Join
             </button>
+
             <p className="text-center">
-              If you dont't have an invite then create{" "}
+              If you don't have an invite then create
               <span
                 className="text-green-300 px-1 underline cursor-pointer"
                 onClick={createNewRoom}
               >
-                new room
+                new room{" "}
               </span>
             </p>
           </form>

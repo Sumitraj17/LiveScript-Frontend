@@ -23,7 +23,7 @@ const Tester = ({ lang, code, socketRef, socketId, id }) => {
       // Emit event to signal code execution to other users
       socketRef.current.emit("code_run", { socketId, id });
      
-      const version = fetchVersion(lang);
+      const version = fetchVersion(lang=='cpp'?'c++':lang);
       const resp = await executeCode(lang, code, version);
 
       socketRef.current.emit("output",{resp,id});

@@ -1,3 +1,4 @@
+
 const monacoLanguages = [];
 const languages = [
   "js",
@@ -7,7 +8,6 @@ const languages = [
   "cpp",
   "gcc",
   "go",
-  "sql",
 ];
 const boilerplateCode = {
   javascript: `// JavaScript Boilerplate
@@ -83,17 +83,7 @@ const boilerplateCode = {
   
   func main() {
       fmt.Println("Hello, World!")
-  }`,
-
-  sql: `-- SQL Boilerplate
-  CREATE TABLE Users (
-    ID INT PRIMARY KEY,
-    Name VARCHAR(100),
-    Age INT
-  ),
-  
-  INSERT INTO Users (ID, Name, Age) VALUES (1, 'John Doe', 30);
-  SELECT * FROM Users;`,
+  }`
 };
 
 export { monacoLanguages, boilerplateCode,languages };

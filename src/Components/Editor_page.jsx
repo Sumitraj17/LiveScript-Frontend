@@ -1,28 +1,30 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate,Navigate  } from "react-router-dom";
 import Editor from "@monaco-editor/react";
 import { boilerplateCode } from "./constants";
 import Selector from "./component/LanguageSelector.jsx";
 import toast from "react-hot-toast";
 import Actions from "./Custom/Actions.js";
 import initSocket from "../socket.jsx";
-import { Navigate } from "react-router-dom";
 import SideBar from "./component/sidebar.jsx";
 import Tester from "./component/tester.jsx";
+import { useContext } from "react";
+import { Context } from "./context/context.jsx";
 
 const Editor_page = () => {
   const location = useLocation();
   const reactNavigate = useNavigate();
   const editorRef = useRef(null);
   const socketRef = useRef(null);
-  const clientsRef = useRef([]); // Ref to hold latest Clients state
+  const [event,setEvent] = useState(false);
   const [update, setUpdate] = useState(false);
   const [lang, setLang] = useState("javascript");
-  const [code, setCode] = useState(""); // Initialize with an empty string
-  const codeRef = useRef(code); // Ref to store the latest code
+  const [code, setCode] = useState(""); 
+  const codeRef = useRef(code); 
   const { id, username } = location.state || {};
   const [Clients, setClient] = useState([]);
   const [socketId, setId] = useState(null);
+  const {currentLang,updateLang} = useContext(Context);
 
   const onMount = (editor) => {
     editorRef.current = editor;
@@ -38,8 +40,6 @@ const Editor_page = () => {
         code: value,
       });
     }
-     
-   
   };
 
   const handleError = (err) => {
@@ -65,6 +65,11 @@ const Editor_page = () => {
           }
         }
       });
+
+      socketRef.current.on('lang_change',({language,sId})=>{
+        if(!event && sId!=socketId)
+          handleLanguageChange(language);
+      })
 
       // Join the room
       socketRef.current.emit(Actions.JOIN, { id, username });
@@ -113,13 +118,17 @@ const Editor_page = () => {
   const handleLanguageChange = (language) => {
     const newCode = boilerplateCode[language];
     setCode(newCode);
+    setEvent(false);
     codeRef.current = newCode; // Update codeRef with the new code
     if(language == lang)
       setUpdate(!update);
+    if(socketRef.current){
+      setEvent(true)
+      socketRef.current.emit('language_change',{id,language,sId:socketId})
+    } 
+    updateLang(language)
     setLang(language);
     console.log("Handle Change code");
-    
-    // socketRef.current.emit("recent_code",{id,socketId});
   };
 
   useEffect(() => {

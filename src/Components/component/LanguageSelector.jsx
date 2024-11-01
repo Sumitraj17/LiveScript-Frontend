@@ -5,7 +5,7 @@ import { Context } from "../context/context.jsx";
 const Selector = ({ update }) => {
   const [Lang, setLanguage] = useState([]); // Initial state for languages
     const [current,setCurrent] = useState('javascript');
-    const {updateDetails} = useContext(Context);
+    const {updateDetails,currentLang,updateLang} = useContext(Context);
   // Fetch languages from the API
   useEffect(() => {
     const fetchLanguages = async () => {
@@ -29,19 +29,20 @@ const Selector = ({ update }) => {
     const selectedLanguage = event.target.value;
     localStorage.setItem('current_lang',selectedLanguage)
     setCurrent(selectedLanguage)
+    updateLang(selectedLanguage)
     update(selectedLanguage);  // Call the update function with the selected language
   };
 
   return (
     <select
       onChange={handleChange}
-      value={current}
+      value={currentLang}
       className="bg-gray-900 w-{200px} text-white border border-white p-3"
     >
       {Lang.length > 0 ? (
         Lang.map((lang, index) => (
           <option value={lang.value} key={index}>
-            {lang.language === 'c++'?'cpp':(lang.language === 'sqlite3'?'sql':lang.language)}
+            {lang.language === 'c++'?'cpp':lang.language}
           </option>
         ))
       ) : (
