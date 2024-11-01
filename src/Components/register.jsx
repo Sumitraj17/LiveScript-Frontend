@@ -17,7 +17,7 @@ const Register = () => {
       toast.error("Provide all details");
     else {
       try {
-        const resp = await axios.post("http://localhost:5000/user/signup", {
+        const resp = await axios.post("https://livescript-backend.onrender.com/user/signup", {
           userName: username,
           email: email,
           password: password,

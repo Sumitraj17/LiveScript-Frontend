@@ -16,7 +16,7 @@ const Login = () => {
         toast.error("Provide all details");
     else{
       try{
-        const resp = await axios.post('http://localhost:5000/user/login',{
+        const resp = await axios.post('https://livescript-backend.onrender.com/user/login',{
           email:email,
           password:password
         },{

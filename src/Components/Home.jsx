@@ -51,7 +51,7 @@ const Home = () => {
   const handleLogout = async() => {
     // Clear any necessary state or session data
     try {
-      const resp = await axios.post("http://localhost:5000/user/logout",{},{
+      const resp = await axios.post("https://livescript-backend.onrender.com/user/logout",{},{
         withCredentials:true
       });
       toast.success("Logged out successfully");
